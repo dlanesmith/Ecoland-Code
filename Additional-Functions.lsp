@@ -52,197 +52,40 @@
 	(princ)
 )
 
-(defun c:pNt() ; places point and text label
-	(setq coordF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\CoordFile.txt" "w"))
-	(setq numStr (getFN))
-	(setq num (atoi numStr))
-	(setq outN (strcat "Starting point: " numStr))
-	(setq outF (getvar "dwgname"))
-	(write-line outN coordF)
-	(write-line outF coordF)
-	(write-line "" coordF)
-	(while T
-		(setq pnt1 (chsPoint 1))
-		(setq wrt (ptCd pnt1))
-		(write-line wrt coordF)
-		(txtBox (plcText num nil))
-		(setq num (1+ num))
-		(setq numStr (itoa num))
-		(writeToFile numStr nil nil nil nil nil nil nil)
-	) ; while
-	(close coordF)
+(defun c:pNt()
+	(PntNLbl 1 1 1 1)
 	(princ)
-) ; defun
+)
 
-(defun c:ptO() ; just places point
-	(setq coordF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\CoordFile.txt" "w"))
-	(setq numStr (getFN))
-	(setq num (atoi numStr))
-	(setq outN (strcat "Starting point: " numStr))
-	(setq outF (getvar "dwgname"))
-	(write-line outN coordF)
-	(write-line outF coordF)
-	(write-line "" coordF)
-	(while T
-		(setq pnt1 (chsPoint 1))
-		(setq wrt (ptCd pnt1))
-		(write-line wrt coordF)
-		(setq num (1+ num))
-		(setq numStr (itoa num))
-		(writeToFile numStr nil nil nil nil nil nil nil)
-	) ; while
-	(close coordF)
+(defun c:ptO()
+	(PntNLbl 1 0 0 1)
 	(princ)
-) ; defun
+)
 
-(defun c:ttO() ; doesn't place point, but still records coordinate, and places label
-	(setq coordF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\CoordFile.txt" "w"))
-	(setq numStr (getFN))
-	(setq num (atoi numStr))
-	(setq outN (strcat "Starting point: " numStr))
-	(setq outF (getvar "dwgname"))
-	(write-line outN coordF)
-	(write-line outF coordF)
-	(write-line "" coordF)
-	(while T
-		(setq pnt1 (chsPoint 0))
-		(setq wrt (ptCd pnt1))
-		(write-line wrt coordF)
-		(setq pntf (plcText num nil))
-		(txtBox pntf)
-		(setq num (1+ num))
-		(setq numStr (itoa num))
-		(writeToFile numStr nil nil nil nil nil nil nil)
-	) ; while
-	(close coordF)
+(defun c:ttO()
+	(PntNLbl 0 1 1 1)
 	(princ)
-) ; defun
+)
 
-(defun c:getCoord() ; just records coordinate
-	(setq coordF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\CoordFile.txt" "w"))
-	(setq numStr (getFN))
-	(setq num (atoi numStr))
-	(setq outN (strcat "Starting point: " numStr))
-	(setq outF (getvar "dwgname"))
-	(write-line outN coordF)
-	(write-line outF coordF)
-	(write-line "" coordF)
-	(while T
-		(setq pnt1 (chsPoint 0))
-		(setq wrt (ptCd pnt1))
-		(write-line wrt coordF)
-		(setq num (1+ num))
-		(setq numStr (itoa num))
-		(writeToFile numStr nil nil nil nil nil nil nil)
-	) ; while
-	(close coordF)
+(defun c:getCoord()
+	(PntNLbl 0 0 0 1)
 	(princ)
-) ; defun
+)
 
-(defun c:dLabel() ; just prints label
-	(setq numStr (getFN))
-	(setq num (atoi numStr))
-	(while T
-		(setq pntf (plcText num nil))
-		(txtBox pntf)
-		(setq num (1+ num))
-		(setq numStr (itoa num))
-		(writeToFile numStr nil nil nil nil nil nil nil)
-	) ; while
+(defun c:dLabel()
+	(PntNLbl 0 1 1 0)
 	(princ)
-) ; defun
+)
 
-(defun c:pnb() ; point and text with no box
-	(setq coordF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\CoordFile.txt" "w"))
-	(setq numStr (getFN))
-	(setq num (atoi numStr))
-	(setq outN (strcat "Starting point: " numStr))
-	(setq outF (getvar "dwgname"))
-	(write-line outN coordF)
-	(write-line outF coordF)
-	(write-line "" coordF)
-	(while T
-		(setq pnt1 (chsPoint 1))
-		(setq wrt (ptCd pnt1))
-		(write-line wrt coordF)
-		(plcText num nil)
-		(setq num (1+ num))
-		(setq numStr (itoa num))
-		(writeToFile numStr nil nil nil nil nil nil nil)
-	) ; while
-	(close coordF)
-	(princ)
-) ; defun
-
-(defun c:setLabel()
-	(setq coordF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\CoordFile.txt" "w"))
-	(while T
-		(setq pnt1 (chsPoint 1))
-		(setq wrt (ptCd pnt1))
-		(setq lbl (getstring "Input label: "))
-		(setq out (strcat lbl "," wrt))
-		(write-line out coordF)
-		(plcText lbl pnt1)
-	) ; while
-	(close coordF)
+(defun c:pnb()
+	(PntNLbl 1 1 0 1)
 	(princ)
 )
 
 ; Places point and records coordinate in file, labels the point and repeats with the label increasing by 1
 ; Different modes affect which capabilites are enabled
 
-(defun getFN()
-	(setq ch (findfile "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt"))
-	(if (= ch nil)
-		(setq num (getint "\nEnter the first number: "))
-		(progn
-			(setq saveF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt" "r"))
-			(setq lin (read-line savef))
-			(close saveF)
-			(if (= lin nil)
-				(setq num (getint "\nEnter the first number: "))
-				(setq num lin)
-			) ; if
-		) ; progn
-	) ; if
-  num
-)
-
-(defun chsPoint(mode)
-	(setq pnt1 (getpoint "\nChoose point: "))
-	(if (= mode 1) (command "._point" pnt1))
-	pnt1
-)
-
-(defun plcText(num pnt2 / dis a b)
-	(if (< (getvar "osmode") 16384) (progn (setq os 1) (setvar "osmode" (+ (getvar "osmode") 16384))) (setq os 0))
-	(if (= pnt2 nil) (setq pnt2 (getpoint "\nChoose text position: ")))
-	(setq dis (sqrt (* (expt (/ textH 2) 2) 2)))
-	(setq rAng (* textA (/ PI 180)))
-	(setq a (* dis (cos (+ rAng (/ PI 4)))))
-	(setq b (* dis (sin (+ rAng (/ PI 4)))))
-	(setq pntf (list (+ (car pnt2) a) (+ (cadr pnt2) b)))
-	(command "._text" pntf textH textA num)
-	(if (= os 1) (setvar "osmode" (- (getvar "osmode") 16384)))
-	pntf
-)
-
-(defun txtBox(pntf)
-	(if (not bns_tcircle) (load "acettxt.lsp"))
-	(if (< (getvar "osmode") 16384) (setq os 1) (setq os 0))
-	(setq ss (addpnts textH textA pntf))
-	(bns_tcircle ss "Variable" "Rectangles" nil 0.5)
-	(if (= os 1) (setvar "osmode" (- (getvar "osmode") 16384)))
-	(princ)
-)
-
-(defun ptCd(pnt)
-	(setq x (rtos (car pnt) 2 5))
-	(setq y (rtos (cadr pnt) 2 5))
-	(setq wrt (strcat x "," y))
-)
-
-(defun PntNLbl(m1 m2 m3 m4 / pnt1 pnt2 pnt3 a b dis x y linN ss numStr wrt os)
+(defun PntNLbl(m1 m2 m3 m4 / pnt1 pnt2 pnt3 a b dis x y linN ss numStr wrt os num)
 	(setq coordF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\CoordFile.txt" "w"))
 	(setq ch (findfile "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt"))
 	(if (= ch nil)
@@ -300,7 +143,7 @@
 				(command "._text" pntf textH textA num)
 				(if (= m3 1)
 					(progn
-						(setq ss (addpnts textH textA pntf))
+						(setq ss (addpnts textH textA pntf num))
 						(bns_tcircle ss "Variable" "Rectangles" nil 0.5)
 					) ; progn
 				) ; if
@@ -315,70 +158,6 @@
 	(princ)
 )
 
-(defun pt( mode / pnt1 pnt2 pnt3 a b dis x y linN ss numStr wrt os) ; Template, keep for now just in case
-	(setq coordF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\CoordFile.txt" "w"))
-	(setq ch (findfile "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt"))
-	(if (= ch nil)
-		(setq num (getint "\nEnter the first number: "))
-		(progn
-			(setq saveF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt" "r"))
-			(setq lin (read-line savef))
-			(close saveF)
-			(if (= lin nil)
-				(setq num (getint "\nEnter the first number: "))
-				(progn
-					(setq linN (atoi lin))
-					(setq num linN)
-				) ; progn
-			) ; if
-		) ; progn
-	) ; if
-	(setq numStr (rtos num))
-	(setq outN (strcat "Starting point: " numStr))
-	(setq outF (getvar "dwgname"))
-	(write-line outN coordF)
-	(write-line outF coordF)
-	(write-line "" coordF)
-	(if (not bns_tcircle) (load "acettxt.lsp"))
-	(while T
-		(if (not (= mode 4))
-			(progn
-				(setq pnt1 (getpoint "\nChoose point: "))
-				(if (or (= mode 0) (= mode 1)) (command "._point" pnt1))
-				(setq x (rtos (car pnt1) 2 5))
-				(setq y (rtos (cadr pnt1) 2 5))
-				(setq wrt (strcat x "," y))
-			) ; progn
-		) ; if
-		(if (or (= mode 0) (or (= mode 2) (= mode 4)))
-			(progn
-				(if (< (getvar "osmode") 16384) (setq os 1) (setq os 0))
-				(setq pnt2 (getpoint "\nChoose text position: "))
-				(setq dis (sqrt (* (expt (/ textH 2) 2) 2)))
-				(setq rAng (* textA (/ PI 180)))
-				(setq a (* dis (cos (+ rAng (/ PI 4)))))
-				(setq b (* dis (sin (+ rAng (/ PI 4)))))
-				(setq pntf (list (+ (car pnt2) a) (+ (cadr pnt2) b)))
-				(command "._text" pntf textH textA num)
-				(if (= mode 5) ()
-					(progn
-						(setq ss (addpnts textH textA pntf))
-						(bns_tcircle ss "Variable" "Rectangles" nil 0.5)
-					) ; progn
-				) ; if
-				(if (= os 1) (setvar "osmode" (- (getvar "osmode") 16384)))
-			) ; progn
-		) ; if
-    (setq num (1+ num))
-    (if (not (= mode 4)) (write-line wrt coordF))
-    (setq numStr (rtos num))
-    (writeToFile numStr nil nil nil nil nil nil nil)
-	) ; while
-	(close coordF)
-	(close saveF)
-	(princ)
-) ; defun
-
 (defun c:test()
 	(setq nm (getstring "Input name of file: "))
 	(setq preset (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\Preset.lsp" "w"))
@@ -390,9 +169,16 @@
 	(princ)
 )
 
-(defun addpnts(size angle pnt2 / x y x1 y1 h th pnt3 pnt4 pnt5 box a b c d rAng ss dis) ; 
+(defun addpnts(size angle pnt2 num / x y x1 y1 h th pnt3 pnt4 pnt5 box a b c d rAng ss dis) ; 
+	(setq mg 1.0)
+	(setq mul 0)
+	(while (> (/ num mg) 1)
+		(setq mul (1+ mul))
+		(setq mg (* mg 10.0))
+	)
+	(print (strcat "mul: " (itoa mul)))
 	(setq y (* 1.5 size))
-	(setq x (* 3.23 size))
+	(setq x (* (+ mul 0.4) size))
 	(setq rAng (* angle (/ PI 180)))
 	(setq h (sqrt (+ (expt x 2) (expt y 2))))
 	(setq th (atan (/ y x)))
@@ -420,7 +206,7 @@
 	(setq ss (ssget "WP" box '((0 . "TEXT"))))
 ) ; defun
 
-(defun c:setNum( / numStr) ; Sets new starting number for label, and saves it to the save file
+(defun c:setNum( / numStr num) ; Sets new starting number for label, and saves it to the save file
 	(setq num (getint "\nEnter new starting number: "))
 	(setq numStr (rtos num))
 	(writeToFile numStr nil nil nil nil nil nil nil)
@@ -502,7 +288,7 @@
 ) ; defun
 
 (defun c:PLSet( / df u ln linArr)
-	(setq dcl_id (load_dialog "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\UIBox.dcl"))
+	(setq dcl_id (load_dialog "C:\\Users\\Ecoland\\Documents\\GitHub Files\\Ecoland-Code\\UIBox.dcl"))
 	(new_dialog "PLSet" dcl_id)
 	(setq
 		PntOn 0
@@ -511,6 +297,7 @@
 		CoordOn 0
 		df nil
 		u nil
+		PreNam ""
 	)
 	(action_tile "f1" "(setq PntOn 1)")
 	(action_tile "f2" "(setq LblOn 1)")
@@ -521,9 +308,9 @@
 	(action_tile "cancel" "(done_dialog) (setq u nil)")
 	(action_tile "accept"
 		(strcat
-		"(setq PreNam (get_tile \"e1\"))"
-		"(setq u T)"
-		"(done_dialog)"
+		"(setq PreNam (get_tile \"e1\")) "
+		"(setq u T) "
+		"(done_dialog) "
 		"(if (= df T) (writeToFile nil nil nil nil (itoa PntOn) (itoa LblOn) (itoa BoxOn) (itoa CoordOn)))"
 		)
 	)
@@ -539,11 +326,12 @@
 						(progn
 							(setq linArr (list ln))
 							(while (not (= (setq ln (read-line preset)) nil))
-								(append linArr (list ln))
+								(setq linArr (append linArr (list ln)))
 							)
 						)
 					)
 					(close preset)
+					(setq linArr (append linArr (list nil)))
 				)
 			)
 			(setq preset (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\Preset.lsp" "w"))
@@ -554,17 +342,16 @@
 			(write-line (strcat "(defun c:" PreNam "()") preset)
 			(write-line (strcat "	(PntNLbl " (itoa PntOn) " " (itoa LblOn) " " (itoa BoxOn) " " (itoa CoordOn) ")") preset)
 			(write-line "	(princ)" preset)
-			(write-line ")" preset)
+			(write-line ")\n" preset)
 			(close preset)
 			(load "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\Preset.lsp")
 		)
 	)
-	(load "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\Preset.lsp")
 	(princ)
 )
 
 (defun c:reload()
-	(load "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\Additional-Functions.lsp")
+	(load "C:\\Users\\Ecoland\\Documents\\GitHub Files\\Ecoland-Code\\Additional-Functions.lsp")
 	(princ)
 )
 
