@@ -22,6 +22,8 @@
 (if (= lin nil) (setq BoxOn T) (setq BoxOn (atoi lin)))
 (setq lin (read-line savef))
 (if (= lin nil) (setq CoordOn T) (setq CoordOn (atoi lin)))
+(setq lin (read-line savef))
+(if (= lin nil) (setq CLbl T) (setq CLbl (atoi lin)))
 (close saveF)
 (setq textAR (- (* PI 2) (getvar "viewtwist")))
 (setq textA (* textAR (/ 180 PI)))
@@ -43,49 +45,52 @@
 
 (defun c:recur() ; Sets saved OSNAP mode to the current mode
 	(setq cur_oVal (getvar "osmode"))
-	(writeToFile nil nil nil (rtos cur_oVal) nil nil nil nil)
+	(writeToFile nil nil nil (rtos cur_oVal) nil nil nil nil nil)
 	(princ)
 ) ; defun
 
 (defun c:defpt()
-	(PntNLbl PntOn LblOn BoxOn CoordOn)
+	(PntNLbl PntOn LblOn BoxOn CoordOn CLbl)
 	(princ)
 )
 
 (defun c:pNt()
-	(PntNLbl 1 1 1 1)
+	(PntNLbl 1 1 1 1 0)
 	(princ)
 )
 
 (defun c:ptO()
-	(PntNLbl 1 0 0 1)
+	(PntNLbl 1 0 0 1 0)
 	(princ)
 )
 
 (defun c:ttO()
-	(PntNLbl 0 1 1 1)
+	(PntNLbl 0 1 1 1 0)
 	(princ)
 )
 
 (defun c:getCoord()
-	(PntNLbl 0 0 0 1)
+	(PntNLbl 0 0 0 1 0)
 	(princ)
 )
 
 (defun c:dLabel()
-	(PntNLbl 0 1 1 0)
+	(PntNLbl 0 1 1 0 0)
 	(princ)
 )
 
 (defun c:pnb()
-	(PntNLbl 1 1 0 1)
+	(PntNLbl 1 1 0 1 0)
 	(princ)
 )
 
 ; Places point and records coordinate in file, labels the point and repeats with the label increasing by 1
 ; Different modes affect which capabilites are enabled
 
-(defun PntNLbl(m1 m2 m3 m4 / pnt1 pnt2 pnt3 a b dis x y linN ss numStr wrt os num)
+(defun PntNLbl(m1 m2 m3 m4 m5 / pnt1 pnt2 pnt3 pntb a b dis x y linN ss numStr wrt os num rAng sel)
+	(setq cMode (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\cModes.txt" "w"))
+	(write-line "0" cMode)
+	(close cMode)
 	(setq coordF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\CoordFile.txt" "w"))
 	(setq ch (findfile "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt"))
 	(if (= ch nil)
@@ -113,7 +118,8 @@
 	(while T
 		(if (or (= m1 1) (= m4 1))
 			(progn
-				(setq pnt1 (getpoint "\nChoose point: "))
+				(if (> (getvar "osmode") 16383) (setvar "osmode" (- (getvar "osmode") 16384)))
+				(setq pnt1 (getpoint "Choose point: "))
 				(if (= m1 1) (command "._point" pnt1))
 				(if (= m4 1)
 					(progn
@@ -134,12 +140,13 @@
 					)
 					(setq os 0)
 				)
-				(setq pnt2 (getpoint "\nChoose text position: "))
-				(setq dis (sqrt (* (expt (/ textH 2) 2) 2)))
+				(setq pnt2 pnt1)
+				(setq dis (sqrt (* (expt (* textH 0.6) 2) 2)))
 				(setq rAng (* textA (/ PI 180)))
 				(setq a (* dis (cos (+ rAng (/ PI 4)))))
 				(setq b (* dis (sin (+ rAng (/ PI 4)))))
 				(setq pntf (list (+ (car pnt2) a) (+ (cadr pnt2) b)))
+				(if (= m5 1) (setq num (getstring "\nInput label: ")))
 				(command "._text" pntf textH textA num)
 				(if (= m3 1)
 					(progn
@@ -147,40 +154,59 @@
 						(bns_tcircle ss "Variable" "Rectangles" nil 0.5)
 					) ; progn
 				) ; if
+				(setq dis (sqrt (* (expt (* textH 0.1) 2) 2)))
+				(setq a (* dis (cos (+ rAng (/ PI 4)))))
+				(setq b (* dis (sin (+ rAng (/ PI 4)))))
+				(setq pntb (list (+ (car pnt2) a) (+ (cadr pnt2) b)))
+				(setq sel (addpnts textH textA pntf num))
+				(command ".move" sel "" pntb pause)
 				(if (= os 1) (setvar "osmode" (- (getvar "osmode") 16384)))
 			) ; progn
 		) ; if
-		(setq num (1+ num))
-		(setq numStr (rtos num))
-		(writeToFile numStr nil nil nil nil nil nil nil)
+		(if (= m5 0)
+			(progn
+				(setq num (1+ num))
+				(setq numStr (rtos num))
+				(writeToFile numStr nil nil nil nil nil nil nil nil)
+			)
+		)
 	) ; while
 	(close coordF)
 	(princ)
 )
 
 (defun c:test()
-	(setq bpt (getpoint "Pick a point: "))
-	(setq spt (getpoint "Another one: "))
-	(setq sel (ssget "c" bpt spt '((0 . "TEXT") (0 . "PLINE"))))
-	(command "._move" (ssget "c" bpt spt '((0 . "TEXT") (0 . "LWPOLYLINE"))) "" bpt)
+	(setq a 50)
+	(setq pnt1 (vl-catch-all-apply 'test2 (list a)))
+	(if (vl-catch-all-error-p pnt1)
+		(if (equal (vl-catch-all-error-message pnt1) "Function cancelled")
+			(print "esc pressed!")
+			(print (strcat "not esc: " (vl-catch-all-error-message pnt1)))
+		)
+	)
+	(print pnt1)
 	(princ)
+)
+
+(defun test2(a)
+	(setq b (getint "Input num: "))
+	(/ a b)
 )
 
 (defun addpnts(size angle pnt2 num / x y x1 y1 h th pnt3 pnt4 pnt5 box a b c d rAng ss dis) ; 
 	(setq mg 1.0)
 	(setq mul 0)
-	(while (>= (/ num mg) 1)
+	(while (>= (/ num mg) 1) ; determines the number of digits of the label so that the four points contain the entire number
 		(setq mul (1+ mul))
 		(setq mg (* mg 10.0))
 	)
-	(print (strcat "mul: " (itoa mul)))
-	(setq y (* 1.5 size))
-	(setq x (* (+ mul 0.4) size))
-	(setq rAng (* angle (/ PI 180)))
+	(setq y (* 2.2 size)) ; The following code uses trigonometry to determine the locations of the points for any coordinate plane oreintation
+	(setq x (* (+ mul 1.1) size))
+	(setq rAng (* angle (/ PI 180))) 
 	(setq h (sqrt (+ (expt x 2) (expt y 2))))
 	(setq th (atan (/ y x)))
 	(setq th (+ rAng th))
-	(setq dis (sqrt (* (expt (/ size 4.0) 2) 2)))
+	(setq dis (sqrt (* (expt (* size 0.6) 2) 2)))
 	(setq x1 (* dis (cos (+ rAng (/ PI 4)))))
 	(setq y1 (* dis (sin (+ rAng (/ PI 4)))))
 	(setq a (- (car pnt2) x1))
@@ -200,13 +226,14 @@
 	;(command "._point" pnt4)
 	;(command "._point" pnt5)
 	(setq box (list pnt2 pnt5 pnt3 pnt4))
-	(setq ss (ssget "WP" box '((0 . "TEXT"))))
+	(setq curLay (getvar "clayer"))
+	(setq ss (ssget "WP" box (list '(-4 . "<AND") '(-4 . "<OR") '(0 . "TEXT") '(0 . "LWPOLYLINE") '(-4 . "OR>") (cons 8 curLay) '(-4 . "AND>"))))
 ) ; defun
 
 (defun c:setNum( / numStr num) ; Sets new starting number for label, and saves it to the save file
 	(setq num (getint "\nEnter new starting number: "))
 	(setq numStr (rtos num))
-	(writeToFile numStr nil nil nil nil nil nil nil)
+	(writeToFile numStr nil nil nil nil nil nil nil nil)
 	(princ)
 ) ; defun
 
@@ -220,7 +247,7 @@
 	(setq textH (getdist (getCursor) "\nSelect height of text: "))
 	(setq textHStr (rtos textH 2 3))
 	(print (strcat "Text height: " textHStr))
-	(writeToFile nil textHStr nil nil nil nil nil nil)
+	(writeToFile nil textHStr nil nil nil nil nil nil nil)
 	(princ)
 )
 
@@ -239,11 +266,11 @@
 	(setq textA (* ang (/ 180 PI)))
 	(setq textAStr (rtos textA 2 2))
 	(print (strcat "Text angle: " textAStr " degrees"))
-	(writeToFile nil nil textAStr nil nil nil nil nil)
+	(writeToFile nil nil textAStr nil nil nil nil nil nil)
 	(princ)
 )
 
-(defun writeToFile(strt textH textA cur_oVal fPnt fLbl fBox fCoord / strtt textHt textAt cur_oValt fPntt fLblt fBoxt fCoordt) ; Writes values to the save file
+(defun writeToFile(strt textH textA cur_oVal fPnt fLbl fBox fCoord fCLbl / strtt textHt textAt cur_oValt fPntt fLblt fBoxt fCoordt fCLblt) ; Writes values to the save file
 	(setq strtt strt)
 	(setq textHt textH)
 	(setq textAt textA)
@@ -252,6 +279,7 @@
 	(setq fLblt fLbl)
 	(setq fBoxt fBox)
 	(setq fCoordt fCoord)
+	(setq fCLblt fCLbl)
 	(setq saveF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt" "r"))
 	(setq lin (read-line savef)) ; strt
 	(if (and (not(= lin "NULL")) (not strt)) (setq strtt lin))
@@ -269,6 +297,8 @@
 	(if (and (not(= lin "NULL")) (not fBox)) (setq fBoxt lin))
 	(setq lin (read-line savef)) ; fCoord
 	(if (and (not(= lin "NULL")) (not fCoord)) (setq fCoordt lin))
+	(setq lin (read-line savef)) ; fCLbl
+	(if (and (not(= lin "NULL")) (not fCLbl)) (setq fCLblt lin))
 	(close saveF)
 	(vl-file-delete "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt")
 	(setq saveF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt" "w"))
@@ -280,6 +310,7 @@
 	(if (not fLblt) (write-line "NULL" saveF) (write-line fLblt saveF))
 	(if (not fBoxt) (write-line "NULL" saveF) (write-line fBoxt saveF))
 	(if (not fCoordt) (write-line "NULL" saveF) (write-line fCoordt saveF))
+	(if (not fCLblt) (write-line "NULL" saveF) (write-line fCLblt saveF))
 	(close saveF)
 	(princ)
 ) ; defun
@@ -292,6 +323,7 @@
 		LblOn 0
 		BoxOn 0
 		CoordOn 0
+		CLbl 0
 		df nil
 		u nil
 		PreNam ""
@@ -302,13 +334,14 @@
 	(action_tile "f4" "(setq CoordOn 1)")
 	(action_tile "d1" "(setq df T)")
 	(action_tile "d2" "(setq df nil)")
+	(action_tile "o1" "(setq CLbl 1)")
 	(action_tile "cancel" "(done_dialog) (setq u nil)")
 	(action_tile "accept"
 		(strcat
 		"(setq PreNam (get_tile \"e1\")) "
 		"(setq u T) "
 		"(done_dialog) "
-		"(if (= df T) (writeToFile nil nil nil nil (itoa PntOn) (itoa LblOn) (itoa BoxOn) (itoa CoordOn)))"
+		"(if (= df T) (writeToFile nil nil nil nil (itoa PntOn) (itoa LblOn) (itoa BoxOn) (itoa CoordOn) (itoa CLbl)))"
 		)
 	)
 	(start_dialog)
@@ -337,7 +370,7 @@
 				(setq linArr (cdr linArr))
 			)
 			(write-line (strcat "(defun c:" PreNam "()") preset)
-			(write-line (strcat "	(PntNLbl " (itoa PntOn) " " (itoa LblOn) " " (itoa BoxOn) " " (itoa CoordOn) ")") preset)
+			(write-line (strcat "	(PntNLbl " (itoa PntOn) " " (itoa LblOn) " " (itoa BoxOn) " " (itoa CoordOn) " " (itoa CLbl) ")") preset)
 			(write-line "	(princ)" preset)
 			(write-line ")\n" preset)
 			(close preset)

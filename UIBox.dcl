@@ -35,6 +35,16 @@ PLSet : dialog {
 				key = "d2";
 				label = "No";
 			}
+			:paragraph{}
+			:paragraph{
+				:text_part{
+					label = "Write Custom Label";
+				}
+			}
+			: toggle {
+				label = "Toggle On";
+				key = "o1";
+			}
 		}
 	}
 	
