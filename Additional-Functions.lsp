@@ -55,7 +55,10 @@
 )
 
 (defun c:pNt()
-	(PntNLbl 1 1 1 1 0)
+	(setq err (vl-catch-all-apply 'PntNLbl (list 1 1 1 1 0)))
+	(if (vl-catch-all-error-p err)
+		(print (strcat "Error: " (vl-catch-all-error-message err) ". Try again."))
+	)
 	(princ)
 )
 
@@ -88,6 +91,8 @@
 ; Different modes affect which capabilites are enabled
 
 (defun PntNLbl(m1 m2 m3 m4 m5 / pnt1 pnt2 pnt3 pntb a b dis x y linN ss numStr wrt os num rAng sel)
+	(setq lp 1)
+	(setq em 0)
 	(setq cMode (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\cModes.txt" "w"))
 	(write-line "0" cMode)
 	(close cMode)
@@ -100,7 +105,18 @@
 			(setq lin (read-line savef))
 			(close saveF)
 			(if (= lin nil)
-				(setq num (getint "\nEnter the first number: "))
+				(progn
+					(setq num (vl-catch-all-apply 'getint (list "Enter the first number: ")))
+					(if (vl-catch-all-error-p num)
+						(if (equal (vl-catch-all-error-message b) "Function cancelled")
+							(setq lp 0)
+							(progn
+								(print (strcat "Error: " (vl-catch-all-error-message b) ". First number set to 1."))
+								(setq num 1)
+							)
+						)
+					)
+				)
 				(progn
 					(setq linN (atoi lin))
 					(setq num linN)
@@ -108,30 +124,46 @@
 			) ; if
 		) ; progn
 	) ; if
-	(setq numStr (rtos num))
-	(setq outN (strcat "Starting point: " numStr))
-	(setq outF (getvar "dwgname"))
-	(write-line outN coordF)
-	(write-line outF coordF)
-	(write-line "" coordF)
-	(if (not bns_tcircle) (load "acettxt.lsp"))
-	(while T
+	(if (= lp 1)
+		(progn
+			(setq numStr (rtos num))
+			(setq outN (strcat "Starting point: " numStr))
+			(setq outF (getvar "dwgname"))
+			(write-line outN coordF)
+			(write-line outF coordF)
+			(write-line "" coordF)
+			(if (not bns_tcircle) (load "acettxt.lsp"))
+		)
+	)
+	(while (= lp 1)
 		(if (or (= m1 1) (= m4 1))
 			(progn
 				(if (> (getvar "osmode") 16383) (setvar "osmode" (- (getvar "osmode") 16384)))
-				(setq pnt1 (getpoint "Choose point: "))
-				(if (= m1 1) (command "._point" pnt1))
-				(if (= m4 1)
+				(setq pnt1 (vl-catch-all-apply 'getpoint (list "Choose point: ")))
+				(if (vl-catch-all-error-p pnt1)
 					(progn
-						(setq x (rtos (car pnt1) 2 5))
-						(setq y (rtos (cadr pnt1) 2 5))
-						(setq wrt (strcat x "," y))
-						(write-line wrt coordF)
+						(if (equal (vl-catch-all-error-message pnt1) "Function cancelled") ()
+							(progn
+								(print (strcat "Error: " (vl-catch-all-error-message pnt1) "."))
+								(setq em 2)
+							)
+						)
+						(setq lp 0)
+					)
+					(progn
+						(if (= m1 1) (command "._point" pnt1))
+						(if (= m4 1)
+							(progn
+								(setq x (rtos (car pnt1) 2 5))
+								(setq y (rtos (cadr pnt1) 2 5))
+								(setq wrt (strcat x "," y))
+							) ; progn
+						) ; if
 					) ; progn
 				) ; if
 			) ; progn
 		) ; if
-		(if (= m2 1)
+		(if (and (= m2 1) (= lp 1))
 			(progn
 				(if (< (getvar "osmode") 16384) 
 					(progn
@@ -140,66 +172,164 @@
 					)
 					(setq os 0)
 				)
-				(setq pnt2 pnt1)
-				(setq dis (sqrt (* (expt (* textH 0.6) 2) 2)))
-				(setq rAng (* textA (/ PI 180)))
-				(setq a (* dis (cos (+ rAng (/ PI 4)))))
-				(setq b (* dis (sin (+ rAng (/ PI 4)))))
-				(setq pntf (list (+ (car pnt2) a) (+ (cadr pnt2) b)))
-				(if (= m5 1) (setq num (getstring "\nInput label: ")))
-				(command "._text" pntf textH textA num)
-				(if (= m3 1)
+				(if (= m5 1)
 					(progn
-						(setq ss (addpnts textH textA pntf num))
-						(bns_tcircle ss "Variable" "Rectangles" nil 0.5)
-					) ; progn
-				) ; if
-				(setq dis (sqrt (* (expt (* textH 0.1) 2) 2)))
-				(setq a (* dis (cos (+ rAng (/ PI 4)))))
-				(setq b (* dis (sin (+ rAng (/ PI 4)))))
-				(setq pntb (list (+ (car pnt2) a) (+ (cadr pnt2) b)))
-				(setq sel (addpnts textH textA pntf num))
-				(command ".move" sel "" pntb pause)
-				(if (= os 1) (setvar "osmode" (- (getvar "osmode") 16384)))
+						(setq num (vl-catch-all-apply 'getstring (list "Input label: ")))
+						(if (vl-catch-all-error-p num)
+							(progn
+								(if (equal (vl-catch-all-error-message num) "Function cancelled")
+									(setq em 1)
+									(progn
+										(print (strcat "Error: " (vl-catch-all-error-message num) "."))
+										(setq em 2)
+									)
+								)
+								(setq lp 0)
+							)
+						)
+					)
+				)
+				(if (= lp 1)
+					(if (or (= m1 1) (= m4 1))
+						(setq pnt2 pnt1)
+						(progn
+							(setq pnt2 (getCursor))
+							;(setq pnt2 (vl-catch-all-apply 'getpoint (list "Choose approximate label position: ")))
+							;(if (vl-catch-all-error-p pnt2)
+							;	(progn
+							;		(if (equal (vl-catch-all-error-message pnt2) "Function cancelled")
+							;			(setq em 1)
+							;			(progn
+							;				(print (strcat "Error: " (vl-catch-all-error-message pnt2) "."))
+							;				(setq em 2)
+							;			)
+							;		)
+							;		(setq lp 0)
+							;	)
+							;)
+						)
+					)
+				)
+				(if (= lp 1)
+					(progn
+						(setq dis (sqrt (* (expt (* textH 0.6) 2) 2)))
+						(setq rAng (* textA (/ PI 180)))
+						(setq a (* dis (cos (+ rAng (/ PI 4)))))
+						(setq b (* dis (sin (+ rAng (/ PI 4)))))
+						(setq pntf (list (+ (car pnt2) a) (+ (cadr pnt2) b)))
+						(command "._text" pntf textH textA num)
+						(setq ss (ssget "_L"))
+						(if (= m3 1)
+							(progn
+								(bns_tcircle ss "Variable" "Rectangles" nil 0.5)
+								(setq ss (ssadd (entlast) ss))
+							) ; progn
+						) ; if
+						(setq dis (sqrt (* (expt (* textH 0.1) 2) 2)))
+						(setq a (* dis (cos (+ rAng (/ PI 4)))))
+						(setq b (* dis (sin (+ rAng (/ PI 4)))))
+						(setq pntb (list (+ (car pnt2) a) (+ (cadr pnt2) b)))
+						(if (= m5 1)
+							(setq mul (strlen num))
+							(progn
+								(setq mg 1.0)
+								(setq mul 0)
+								(while (>= (/ num mg) 1) ; determines the number of digits of the label so that the four points contain the entire number
+									(setq mul (1+ mul))
+									(setq mg (* mg 10.0))
+								)
+							)
+						)
+						(setq err (vl-catch-all-apply 'moveL (list ss pntb)))
+						(print err)
+						(if (vl-catch-all-error-p err)
+							(progn
+								(print "moveErr")
+								(if (equal (vl-catch-all-error-message err) "Function cancelled")
+									(setq em 1)
+									(progn
+										(print (strcat "Error: " (vl-catch-all-error-message err) "."))
+										(setq em 2)
+									)
+								)
+								(setq lp 0)
+							)
+						)
+						(if (= os 1) (setvar "osmode" (- (getvar "osmode") 16384)))
+					)
+				)
 			) ; progn
 		) ; if
-		(if (= m5 0)
+		(if (and (= m5 0) (= lp 1))
 			(progn
 				(setq num (1+ num))
 				(setq numStr (rtos num))
 				(writeToFile numStr nil nil nil nil nil nil nil nil)
 			)
 		)
+		(if (and (= m4 1) (= lp 1)) (write-line wrt coordF))
 	) ; while
+	(HandErr em (= m1 1) (= m2 1) (= m4 1))
 	(close coordF)
 	(princ)
 )
 
-(defun c:test()
-	(setq a 50)
-	(setq pnt1 (vl-catch-all-apply 'test2 (list a)))
-	(if (vl-catch-all-error-p pnt1)
-		(if (equal (vl-catch-all-error-message pnt1) "Function cancelled")
-			(print "esc pressed!")
-			(print (strcat "not esc: " (vl-catch-all-error-message pnt1)))
-		)
+(defun moveL(sel pntb)
+	(command "._move" sel "" pntb pause)
+	(princ)
+)
+
+(defun HandErr(em m1 m2 m4)
+	(print "HandErr")
+	(if (and m1 (= em 1))
+		(if m2 (command "._undo" 3) (command "._undo" 1))	
 	)
-	(print pnt1)
+	;(if m4
+	;	(progn
+	;		(startapp "C:\\Users\\Ecoland\\Documents\\Helpful Code\\Coordinate Formatter.exe")
+	;		(print "Coordinates saved to file.")
+	;	)
+	;)
+	(if (= em 2)
+		(print "Function terminated improperly.")
+	)
+)
+
+(defun c:test()
+	(setq a 0)
+	(while (< a 10)
+		(setq pnt1 (vl-catch-all-apply 'getpoint (list "Pick point")))
+		(if (vl-catch-all-error-p pnt1)
+			(progn
+				(command "._undo" 1)
+				(if (equal (vl-catch-all-error-message pnt1) "Function cancelled")
+					(print "esc pressed from 1")
+					(print (strcat "not esc: " (vl-catch-all-error-message pnt1)))
+				)
+				(break)
+			)
+			(command "._point" pnt1)
+		)
+		(setq a (1+ a))
+	)
 	(princ)
 )
 
 (defun test2(a)
-	(setq b (getint "Input num: "))
+	(setq b (vl-catch-all-apply 'getpoint (list "Input num: ")))
+	(if (vl-catch-all-error-p b)
+		(progn
+			(if (equal (vl-catch-all-error-message b) "Function cancelled")
+				(print "esc pressed in 2")
+				(print (strcat "not esc2: " (vl-catch-all-error-message b)))
+			)
+			(setq b 2)
+		)
+	)
 	(/ a b)
 )
 
-(defun addpnts(size angle pnt2 num / x y x1 y1 h th pnt3 pnt4 pnt5 box a b c d rAng ss dis) ; 
-	(setq mg 1.0)
-	(setq mul 0)
-	(while (>= (/ num mg) 1) ; determines the number of digits of the label so that the four points contain the entire number
-		(setq mul (1+ mul))
-		(setq mg (* mg 10.0))
-	)
+(defun addpnts(size angle pnt2 mul / x y x1 y1 h th pnt3 pnt4 pnt5 box a b c d rAng ss dis) ; Useless now I think, keep just in case
 	(setq y (* 2.2 size)) ; The following code uses trigonometry to determine the locations of the points for any coordinate plane oreintation
 	(setq x (* (+ mul 1.1) size))
 	(setq rAng (* angle (/ PI 180))) 
