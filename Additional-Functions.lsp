@@ -139,7 +139,7 @@
 		(if (or (= m1 1) (= m4 1))
 			(progn
 				(if (> (getvar "osmode") 16383) (setvar "osmode" (- (getvar "osmode") 16384)))
-				(setq pnt1 (vl-catch-all-apply 'getpoint (list "Choose point: ")))
+				(setq pnt1 (vl-catch-all-apply 'getpoint (list "\nChoose point: ")))
 				(if (vl-catch-all-error-p pnt1)
 					(progn
 						(if (equal (vl-catch-all-error-message pnt1) "Function cancelled") ()
@@ -240,22 +240,41 @@
 								)
 							)
 						)
-						(setq err (vl-catch-all-apply 'moveL (list ss pntb)))
-						(print err)
-						(if (vl-catch-all-error-p err)
-							(progn
-								(print "moveErr")
-								(if (equal (vl-catch-all-error-message err) "Function cancelled")
-									(setq em 1)
-									(progn
-										(print (strcat "Error: " (vl-catch-all-error-message err) "."))
-										(setq em 2)
-									)
+						(repeat (setq cnt (sslength ss))
+							(setq e (ssname ss (setq cnt (1- cnt))))
+							(if (= (cdr (assoc 0 (entget e))) "TEXT")
+								(progn
+									(setq xc (cadr (assoc 10 (entget e))))
+									(setq yc (caddr (assoc 10 (entget e))))
+									(setq pntm1 (list xc yc))
 								)
+							)
+						)
+						(setq err (vl-catch-all-apply 'moveL (list ss pntb)))
+						(repeat (setq cnt (sslength ss))
+							(setq e (ssname ss (setq cnt (1- cnt))))
+							(if (= (cdr (assoc 0 (entget e))) "TEXT")
+								(progn
+									(setq xc (cadr (assoc 10 (entget e))))
+									(setq yc (caddr (assoc 10 (entget e))))
+									(setq pntm2 (list xc yc))
+								)
+							)
+						)
+						(if (equal pntm1 pntm2)
+							(progn
+								(setq em 1)
 								(setq lp 0)
 							)
 						)
-						(if (= os 1) (setvar "osmode" (- (getvar "osmode") 16384)))
+						(if (vl-catch-all-error-p err)
+							(progn
+								(print (strcat "Error: " (vl-catch-all-error-message err) "."))
+								(setq em 2)
+								(setq lp 0)
+							)
+						)
+						(if (and (= os 1) (> (getvar "osmode") 16383)) (setvar "osmode" (- (getvar "osmode") 16384)))
 					)
 				)
 			) ; progn
@@ -280,16 +299,32 @@
 )
 
 (defun HandErr(em m1 m2 m4)
-	(print "HandErr")
 	(if (and m1 (= em 1))
 		(if m2 (command "._undo" 3) (command "._undo" 1))	
 	)
-	;(if m4
-	;	(progn
-	;		(startapp "C:\\Users\\Ecoland\\Documents\\Helpful Code\\Coordinate Formatter.exe")
-	;		(print "Coordinates saved to file.")
-	;	)
-	;)
+	(if m4
+		(progn
+			(setq loop T)
+			(while loop
+				(setq q (getstring "Save to File [Y/N]: "))
+				(if (or (= q "Y") (= q "y"))
+					(progn
+						(startapp "C:\\Users\\Ecoland\\Documents\\Helpful Code\\Coordinate Formatter.exe")
+						(print "Coordinates saved to file.")
+						(setq loop nil)
+					)
+					(progn
+						(if (or (= q "N") (= q "n"))
+							(setq loop nil)
+							(progn
+								(print "Invalid input!")
+							)
+						)
+					)
+				)
+			)
+		)
+	)
 	(if (= em 2)
 		(print "Function terminated improperly.")
 	)
