@@ -58,3 +58,14 @@ PLSet : dialog {
 	ok_cancel;
 	
 }
+
+AFMenu : dialog {
+	label = "Additional Functions Menu";
+	:boxed_row{
+		:button{
+			label = "Point";
+			key = "point";
+		}
+	}
+	ok_cancel;
+}
