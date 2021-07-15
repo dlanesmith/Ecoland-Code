@@ -60,6 +60,15 @@
 		(setq dCLbl (atoi lin))
 	)
 )
+(setq lin (read-line savef))
+(if (= lin nil)
+	(progn
+		(setq elOn 1)
+	)
+	(progn
+		(setq elOn (atoi lin))
+	)
+)
 (setq
 	PntOn dPntOn
 	LblOn dLblOn
@@ -70,6 +79,7 @@
 (close saveF)
 (setq textAR (- (* PI 2) (getvar "viewtwist")))
 (setq textA (* textAR (/ 180 PI)))
+(setq norm 1)
 
 (defun c:cur( / num msg) ; Sets OSNAP mode to the standard as dictated by the save file
 	(setvar "osmode" cur_oVal)
@@ -88,7 +98,7 @@
 
 (defun c:recur() ; Sets saved OSNAP mode to the current mode
 	(setq cur_oVal (getvar "osmode"))
-	(writeToFile nil nil nil (rtos cur_oVal) nil nil nil nil nil)
+	(writeToSaveFile nil nil nil (rtos cur_oVal) nil nil nil nil nil nil)
 	(princ)
 ) ; defun
 
@@ -105,9 +115,11 @@
 ; Places point and records coordinate in file, labels the point and repeats with the label increasing by 1
 ; Different modes affect which capabilites are enabled
 
-(defun PntNLbl(m1 m2 m3 m4 m5 / pnt1 pnt2 pnt3 pntb a b dis x y linN ss numStr wrt os num rAng sel)
+(defun PntNLbl(m1 m2 m3 m4 m5 / lp2 xc yc pntm1 pntm2 cnt e mul mg outN outFsaveF lin coordF ch lp em pnt1 pnt2 pnt3 pntb pntf a b dis x y linN ss numStr wrt os num rAng sel)
 	(setq lp 1)
+	(setq lp2 1)
 	(setq em 0)
+	(regapp "Name")
 	(setq coordF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\CoordFile.txt" "w"))
 	(setq ch (findfile "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt"))
 	(if (= ch nil)
@@ -123,7 +135,7 @@
 						(if (equal (vl-catch-all-error-message b) "Function cancelled")
 							(setq lp 0)
 							(progn
-								(print (strcat "Error: " (vl-catch-all-error-message b) ". First number set to 1."))
+								(prompt (strcat "\nError: " (vl-catch-all-error-message b) ". First number set to 1."))
 								(setq num 1)
 							)
 						)
@@ -139,7 +151,7 @@
 	(if (= lp 1)
 		(progn
 			(setq numStr (rtos num))
-			(setq outN (strcat "Starting point: " numStr))
+			(setq outN (rtos m5))
 			(setq outF (getvar "dwgname"))
 			(write-line outN coordF)
 			(write-line outF coordF)
@@ -147,7 +159,7 @@
 			(if (not bns_tcircle) (load "acettxt.lsp"))
 		)
 	)
-	(while (= lp 1)
+	(while (and (= lp 1) (= lp2 1))
 		(if (or (= m1 1) (= m4 1))
 			(progn
 				(if (> (getvar "osmode") 16383) (setvar "osmode" (- (getvar "osmode") 16384)))
@@ -156,19 +168,19 @@
 					(progn
 						(if (equal (vl-catch-all-error-message pnt1) "Function cancelled") ()
 							(progn
-								(print (strcat "Error: " (vl-catch-all-error-message pnt1) "."))
+								(prompt (strcat "\nError: " (vl-catch-all-error-message pnt1) "."))
 								(setq em 2)
 							)
 						)
 						(setq lp 0)
 					)
 					(progn
-						(if (= m1 1) (command "._point" pnt1))
+						(if (= m1 1) (progn (command "._point" pnt1) (setq pntName (entlast))) (setq pntName nil))
 						(if (= m4 1)
 							(progn
 								(setq x (rtos (car pnt1) 2 5))
 								(setq y (rtos (cadr pnt1) 2 5))
-								(setq wrt (strcat x "," y))
+								(setq z (rtos (caddr pnt1) 2 5))
 							) ; progn
 						) ; if
 					) ; progn
@@ -184,15 +196,41 @@
 					)
 					(setq os 0)
 				)
+				(setq numStr (itoa num))
+				;(if (= elOn 1)
+				;	(setq fP "C:\\Users\\Ecoland\\Documents\\Point Drawings\\Points\\Deleted Points\\")
+				;	(setq fN (getvar "dwgname"))
+				;	(setq i 1)
+				;	(while (not (= (substr fN i 1) ".")) (setq i (1+ i)))
+				;	(setq fN (substr fN 1 (- i 1)))
+				;	(setq fP (strcat fP fN "-deleted points.txt"))
+				;	(setq delF (open fP "r"))
+				;	(setq lin (read-line delF))
+				;	(if (not (= lin nil))
+				;		(progn
+				;			(setq numStr lin)
+				;			(setq lst '())
+				;			(while (not (= (setq lin (read-line delF)) nil))
+				;				(setq lst (append lst (list lin)))
+				;			)
+				;			(close delF)
+				;			(setq delF (open fP "w"))
+				;			(while (not (= (car lst) nil))
+				;				(write-line (car lst) delF)
+				;				(setq lst (cdr lst))
+				;			)
+				;		)
+				;	)
+				;)
 				(if (= m5 1)
 					(progn
-						(setq num (vl-catch-all-apply 'getstring (list "Input label: ")))
-						(if (vl-catch-all-error-p num)
+						(setq numStr (vl-catch-all-apply 'getstring (list "Input label: ")))
+						(if (vl-catch-all-error-p numStr)
 							(progn
-								(if (equal (vl-catch-all-error-message num) "Function cancelled")
+								(if (equal (vl-catch-all-error-message numStr) "Function cancelled")
 									(setq em 1)
 									(progn
-										(print (strcat "Error: " (vl-catch-all-error-message num) "."))
+										(prompt (strcat "\nError: " (vl-catch-all-error-message numStr) "."))
 										(setq em 2)
 									)
 								)
@@ -202,23 +240,18 @@
 					)
 				)
 				(if (= lp 1)
-					(if (or (= m1 1) (= m4 1))
-						(setq pnt2 pnt1)
-						(progn
-							(setq pnt2 (getCursor))
-							;(setq pnt2 (vl-catch-all-apply 'getpoint (list "Choose approximate label position: ")))
-							;(if (vl-catch-all-error-p pnt2)
-							;	(progn
-							;		(if (equal (vl-catch-all-error-message pnt2) "Function cancelled")
-							;			(setq em 1)
-							;			(progn
-							;				(print (strcat "Error: " (vl-catch-all-error-message pnt2) "."))
-							;				(setq em 2)
-							;			)
-							;		)
-							;		(setq lp 0)
-							;	)
-							;)
+					(progn
+						(if (= m4 1) 
+							(progn
+								(setq wrt (strcat numStr "," x "," y))
+								(if (= elOn 1) (setq wrt (strcat wrt "," z)))
+							)
+						)
+						(if (or (= m1 1) (= m4 1))
+							(setq pnt2 pnt1)
+							(progn
+								(setq pnt2 (getCursor))
+							)
 						)
 					)
 				)
@@ -229,11 +262,14 @@
 						(setq a (* dis (cos (+ rAng (/ PI 4)))))
 						(setq b (* dis (sin (+ rAng (/ PI 4)))))
 						(setq pntf (list (+ (car pnt2) a) (+ (cadr pnt2) b)))
-						(command "._text" pntf textH textA num)
+						(print numStr)
+						(command "._text" pntf textH textA numStr)
+						(setq txtName (entlast))
 						(setq ss (ssget "_L"))
 						(if (= m3 1)
 							(progn
 								(bns_tcircle ss "Variable" "Rectangles" nil 0.5)
+								(setq boxName (entlast))
 								(setq ss (ssadd (entlast) ss))
 							) ; progn
 						) ; if
@@ -241,17 +277,6 @@
 						(setq a (* dis (cos (+ rAng (/ PI 4)))))
 						(setq b (* dis (sin (+ rAng (/ PI 4)))))
 						(setq pntb (list (+ (car pnt2) a) (+ (cadr pnt2) b)))
-						(if (= m5 1)
-							(setq mul (strlen num))
-							(progn
-								(setq mg 1.0)
-								(setq mul 0)
-								(while (>= (/ num mg) 1) ; determines the number of digits of the label so that the four points contain the entire number
-									(setq mul (1+ mul))
-									(setq mg (* mg 10.0))
-								)
-							)
-						)
 						(repeat (setq cnt (sslength ss))
 							(setq e (ssname ss (setq cnt (1- cnt))))
 							(if (= (cdr (assoc 0 (entget e))) "TEXT")
@@ -281,12 +306,40 @@
 						)
 						(if (vl-catch-all-error-p err)
 							(progn
-								(print (strcat "Error: " (vl-catch-all-error-message err) "."))
+								(prompt (strcat "\nError: " (vl-catch-all-error-message err) "."))
 								(setq em 2)
 								(setq lp 0)
 							)
 						)
 						(if (and (= os 1) (> (getvar "osmode") 16383)) (setvar "osmode" (- (getvar "osmode") 16384)))
+					)
+				)
+				(if (= lp 1)
+					(progn
+						(if (not (= pntName nil))
+							(progn
+								(setq lastent (entget pntName))
+								(setq exdata (list (list -3 (list "Name" (cons 1000 numStr)))))
+								(setq lastent (append lastent exdata))
+								(entmod lastent)
+							)
+						)
+						(if (not (= txtName nil))
+							(progn
+								(setq lastent (entget txtName))
+								(setq exdata (list (list -3 (list "Name" (cons 1000 numStr)))))
+								(setq lastent (append lastent exdata))
+								(entmod lastent)
+							)
+						)
+						(if (not (= boxName nil))
+							(progn
+								(setq lastent (entget boxName))
+								(setq exdata (list (list -3 (list "Name" (cons 1000 numStr)))))
+								(setq lastent (append lastent exdata))
+								(entmod lastent)
+							)
+						)
 					)
 				)
 			) ; progn
@@ -295,12 +348,13 @@
 			(progn
 				(setq num (1+ num))
 				(setq numStr (rtos num))
-				(writeToFile numStr nil nil nil nil nil nil nil nil)
+				(writeToSaveFile numStr nil nil nil nil nil nil nil nil nil)
 			)
 		)
 		(if (and (= m4 1) (= lp 1)) (write-line wrt coordF))
+		(if (= norm 0) (setq lp2 0))
 	) ; while
-	(HandErr em (= m1 1) (= m2 1) (= m4 1))
+	(if (= norm 1) (HandErr em (= m1 1) (= m2 1) (= m4 1)))
 	(close coordF)
 	(princ)
 )
@@ -310,29 +364,30 @@
 	(princ)
 )
 
-(defun HandErr(em m1 m2 m4)
-	(if (and m1 (= em 1))
-		(if m2 (command "._undo" 3) (command "._undo" 1))	
+(defun HandErr(em m1 m2 m4 / q loop)
+	(if (= em 1)
+		(if m1
+			(if m2 (command "._undo" 3) (command "._undo" 1))
+			(if m2 (command "._undo" 2))
+		)
 	)
 	(if m4
 		(progn
 			(setq loop T)
 			(while loop
-				(setq q (getstring "Save to File [Y/N]: "))
-				(if (or (= q "Y") (= q "y"))
+				(setq q (getYN "Save to File [Y/N]: "))
+				(if (= q 1)
 					(progn
-						(setq cMode (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\cModes.txt" "w"))
-						(write-line "0" cMode)
-						(close cMode)
+						(writeToCModes "0" nil nil)
 						(startapp "C:\\Users\\Ecoland\\Documents\\Helpful Code\\Coordinate Formatter.exe")
-						(print "Coordinates saved to file.")
+						(prompt "\nCoordinates saved to file.")
 						(setq loop nil)
 					)
 					(progn
-						(if (or (= q "N") (= q "n"))
+						(if (= q 0)
 							(setq loop nil)
 							(progn
-								(print "Invalid input!")
+								(prompt "Invalid input!\n")
 							)
 						)
 					)
@@ -341,7 +396,23 @@
 		)
 	)
 	(if (= em 2)
-		(print "Function terminated improperly.")
+		(prompt "\nFunction terminated improperly.")
+	)
+)
+
+(defun getYN(pr / inS loop)
+	(setq loop T)
+	(while loop
+		(setq inS (getstring pr))
+		(if (or (= inS "Y") (= inS "y")) (progn (setq loop nil) 1) 
+			(progn
+				(if (or (= ins "N") (= ins "n")) (progn (setq loop nil) 0)
+					(progn
+						(prompt "Invalid input. Try again.\n")
+					)
+				)
+			)
+		)
 	)
 )
 
@@ -364,45 +435,14 @@
 	(/ a b)
 )
 
-(defun addpnts(size angle pnt2 mul / x y x1 y1 h th pnt3 pnt4 pnt5 box a b c d rAng ss dis) ; Useless now I think, keep just in case
-	(setq y (* 2.2 size)) ; The following code uses trigonometry to determine the locations of the points for any coordinate plane oreintation
-	(setq x (* (+ mul 1.1) size))
-	(setq rAng (* angle (/ PI 180))) 
-	(setq h (sqrt (+ (expt x 2) (expt y 2))))
-	(setq th (atan (/ y x)))
-	(setq th (+ rAng th))
-	(setq dis (sqrt (* (expt (* size 0.6) 2) 2)))
-	(setq x1 (* dis (cos (+ rAng (/ PI 4)))))
-	(setq y1 (* dis (sin (+ rAng (/ PI 4)))))
-	(setq a (- (car pnt2) x1))
-	(setq b (- (cadr pnt2) y1))
-	(setq pnt2 (list a b))
-	(setq x1 (* h (cos th)))
-	(setq y1 (* h (sin th)))
-	(setq pnt3 (list (+ a x1) (+ b y1)))
-	(setq x1 (* x (cos rAng)))
-	(setq y1 (* x (sin rAng)))
-	(setq pnt4 (list (+ a x1) (+ b y1)))
-	(setq x1 (* y (cos (+ (/ PI 2) rAng))))
-	(setq y1 (* y (sin (+ (/ PI 2) rAng))))
-	(setq pnt5 (list (+ a x1) (+ b y1)))
-	;(command "._point" pnt2) ; For debugging
-	;(command "._point" pnt3)
-	;(command "._point" pnt4)
-	;(command "._point" pnt5)
-	(setq box (list pnt2 pnt5 pnt3 pnt4))
-	(setq curLay (getvar "clayer"))
-	(setq ss (ssget "WP" box (list '(-4 . "<AND") '(-4 . "<OR") '(0 . "TEXT") '(0 . "LWPOLYLINE") '(-4 . "OR>") (cons 8 curLay) '(-4 . "AND>"))))
-) ; defun
-
 (defun c:setNum( / numStr num) ; Sets new starting number for label, and saves it to the save file
 	(setq num (getint "\nEnter new starting number: "))
 	(setq numStr (rtos num))
-	(writeToFile numStr nil nil nil nil nil nil nil nil)
+	(writeToSaveFile numStr nil nil nil nil nil nil nil nil nil)
 	(princ)
 ) ; defun
 
-(defun c:setText( / textHStr textAStr pnt1 pnt2 ang) ; Sets new height and angle of text, and saves it to the save file
+(defun c:setText() ; Sets new height and angle of text, and saves it to the save file
 	(c:setHeight)
 	(c:setAngle)
 	(princ)
@@ -411,18 +451,18 @@
 (defun c:setHeight( / textHStr)
 	(setq textH (getdist (getCursor) "\nSelect height of text: "))
 	(setq textHStr (rtos textH 2 3))
-	(print (strcat "Text height: " textHStr))
-	(writeToFile nil textHStr nil nil nil nil nil nil nil)
+	(prompt (strcat "\nText height: " textHStr))
+	(writeToSaveFile nil textHStr nil nil nil nil nil nil nil nil)
 	(princ)
 )
 
-(defun getCursor( / a b c tpnt)
+(defun getCursor( / a b c tpnt pnt)
 	(setq
 		c (grread T)
 		tpnt (cadr c)
 		a (car tpnt)
 		b (cadr tpnt)
-		pnt1 (list a b)
+		pnt (list a b)
 	)
 )
 
@@ -430,12 +470,12 @@
 	(setq ang (getorient (getCursor) "\nDraw a horizontal line: "))
 	(setq textA (* ang (/ 180 PI)))
 	(setq textAStr (rtos textA 2 2))
-	(print (strcat "Text angle: " textAStr " degrees"))
-	(writeToFile nil nil textAStr nil nil nil nil nil nil)
+	(prompt (strcat "\nText angle: " textAStr " degrees"))
+	(writeToSaveFile nil nil textAStr nil nil nil nil nil nil nil)
 	(princ)
 )
 
-(defun writeToFile(strt textH textA cur_oVal fPnt fLbl fBox fCoord fCLbl / strtt textHt textAt cur_oValt fPntt fLblt fBoxt fCoordt fCLblt) ; Writes values to the save file
+(defun writeToSaveFile(strt textH textA cur_oVal fPnt fLbl fBox fCoord fCLbl elOn / strtt textHt textAt cur_oValt fPntt fLblt fBoxt fCoordt fCLblt elOnt saveF lin) ; Writes values to the save file
 	(setq strtt strt)
 	(setq textHt textH)
 	(setq textAt textA)
@@ -445,25 +485,28 @@
 	(setq fBoxt fBox)
 	(setq fCoordt fCoord)
 	(setq fCLblt fCLbl)
+	(setq elOnt elOn)
 	(setq saveF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt" "r"))
-	(setq lin (read-line savef)) ; strt
-	(if (and (not(= lin "NULL")) (not strt)) (setq strtt lin))
-	(setq lin (read-line savef)) ; textH
-	(if (and (not(= lin "NULL")) (not textH)) (setq textHt lin))
-	(setq lin (read-line savef)) ; textA
-	(if (and (not(= lin "NULL")) (not textA)) (setq textAt lin))
-	(setq lin (read-line savef)) ; cur_oVal
-	(if (and (not(= lin "NULL")) (not cur_oVal)) (setq cur_oValt lin))
-	(setq lin (read-line savef)) ; fPnt
-	(if (and (not(= lin "NULL")) (not fPnt)) (setq fPntt lin))
-	(setq lin (read-line savef)) ; fLbl
-	(if (and (not(= lin "NULL")) (not fLbl)) (setq fLblt lin))
-	(setq lin (read-line savef)) ; fBox
-	(if (and (not(= lin "NULL")) (not fBox)) (setq fBoxt lin))
-	(setq lin (read-line savef)) ; fCoord
-	(if (and (not(= lin "NULL")) (not fCoord)) (setq fCoordt lin))
-	(setq lin (read-line savef)) ; fCLbl
-	(if (and (not(= lin "NULL")) (not fCLbl)) (setq fCLblt lin))
+	(setq lin (read-line saveF)) ; strt
+	(if (and (not (= lin "NULL")) (not strt)) (setq strtt lin))
+	(setq lin (read-line saveF)) ; textH
+	(if (and (not (= lin "NULL")) (not textH)) (setq textHt lin))
+	(setq lin (read-line saveF)) ; textA
+	(if (and (not (= lin "NULL")) (not textA)) (setq textAt lin))
+	(setq lin (read-line saveF)) ; cur_oVal
+	(if (and (not (= lin "NULL")) (not cur_oVal)) (setq cur_oValt lin))
+	(setq lin (read-line saveF)) ; fPnt
+	(if (and (not (= lin "NULL")) (not fPnt)) (setq fPntt lin))
+	(setq lin (read-line saveF)) ; fLbl
+	(if (and (not (= lin "NULL")) (not fLbl)) (setq fLblt lin))
+	(setq lin (read-line saveF)) ; fBox
+	(if (and (not (= lin "NULL")) (not fBox)) (setq fBoxt lin))
+	(setq lin (read-line saveF)) ; fCoord
+	(if (and (not (= lin "NULL")) (not fCoord)) (setq fCoordt lin))
+	(setq lin (read-line saveF)) ; fCLbl
+	(if (and (not (= lin "NULL")) (not fCLbl)) (setq fCLblt lin))
+	(setq lin (read-line saveF)) ; elOn
+	(if (and (not (= lin "NULL")) (not elOn)) (setq elOnt lin))
 	(close saveF)
 	(vl-file-delete "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt")
 	(setq saveF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\SaveFile.txt" "w"))
@@ -476,11 +519,33 @@
 	(if (not fBoxt) (write-line "NULL" saveF) (write-line fBoxt saveF))
 	(if (not fCoordt) (write-line "NULL" saveF) (write-line fCoordt saveF))
 	(if (not fCLblt) (write-line "NULL" saveF) (write-line fCLblt saveF))
+	(if (not elOnt) (write-line "NULL" saveF) (write-line elOnt saveF))
 	(close saveF)
 	(princ)
 ) ; defun
 
-(defun c:PLSet( / df u ln linArr dcl_id PreNam chk)
+(defun writeToCModes(ln1 ln2 ln3 / ln1t ln2t ln3t cMode)
+	(setq ln1t ln1)
+	(setq ln2t ln2)
+	(setq ln3t ln3)
+	(setq cMode (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\cModes.txt" "r"))
+	(setq lin (read-line cMode)) ; ln1
+	(if (and (not(= lin "NULL")) (not ln1)) (setq ln1t lin))
+	(setq lin (read-line cMode)) ; ln2
+	(if (and (not(= lin "NULL")) (not ln2)) (setq ln2t lin))
+	(setq lin (read-line cMode)) ; ln3
+	(if (and (not(= lin "NULL")) (not ln3)) (setq ln3t lin))
+	(close cMode)
+	(vl-file-delete "C:\\Users\\Ecoland\\Documents\\Helpful Code\\cModes.txt")
+	(setq cMode (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\cModes.txt" "w"))
+	(if (not ln1t) (write-line "NULL" cMode) (write-line ln1t cMode))
+	(if (not ln2t) (write-line "NULL" cMode) (write-line ln2t cMode))
+	(if (not ln3t) (write-line "NULL" cMode) (write-line ln3t cMode))
+	(close cMode)
+	(princ)
+)
+
+(defun c:PLSet( / df u ln linArr dcl_id PreNam chk temp preset)
 	(setq dcl_id (load_dialog "C:\\Users\\Ecoland\\Documents\\GitHub Files\\Ecoland-Code\\Additional-Functions Dialog.dcl"))
 	(new_dialog "PLSet" dcl_id)
 	(setq
@@ -508,7 +573,7 @@
 		"(done_dialog) "
 		"(if (= df T)
 			(progn	
-				(writeToFile nil nil nil nil (itoa PntOn) (itoa LblOn) (itoa BoxOn) (itoa CoordOn) (itoa CLbl))
+				(writeToSaveFile nil nil nil nil (itoa PntOn) (itoa LblOn) (itoa BoxOn) (itoa CoordOn) (itoa CLbl) nil)
 				(setq dPntOn PntOn)
 				(setq dLblOn LblOn)
 				(setq dBoxOn BoxOn)
@@ -561,19 +626,19 @@
 							(write-line "	(princ)" preset)
 							(write-line ")\n" preset)
 						)
-						(prompt "That preset name is already in use.")
+						(prompt "\nThat preset name is already in use.")
 					)
 					(close preset)
 					(load "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\Preset.lsp")
 				)
-				(prompt "Invalid command name. Spaces are not allowed.")
+				(prompt "\nInvalid command name. Spaces are not allowed.")
 			)
 		)
 	)
 	(princ)
 )
 
-(defun c:AFMenu( / dcl_id)
+(defun c:AFMenu( / dcl_id flag i)
 	(setq flag 4)
 	(setq dcl_id (load_dialog "C:\\Users\\Ecoland\\Documents\\GitHub Files\\Ecoland-Code\\Additional-Functions Dialog.dcl"))
 	(new_dialog "AFMenu" dcl_id)
@@ -609,7 +674,7 @@
 
 (defun c:listPres( / presF ln)
 	(setq presF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\Preset.lsp" "r"))
-	(prompt "List of Presets:\n")
+	(prompt "\nList of Presets:\n")
 	(while (not (= (setq ln (read-line presF)) nil))
 		(prompt (strcat "--" (substr ln 10 (- (strlen ln) 11)) "--\n"))
 		(setq ln (read-line presF))
@@ -637,7 +702,7 @@
 	)
 	(close presF)
 	(if (= chk 0)
-		(prompt "There is no preset with that name.")
+		(prompt "\nThere is no preset with that name.")
 		(progn
 			(setq presF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\Preset.lsp" "r"))
 			(setq ln (read-line presF))
@@ -669,24 +734,112 @@
 				
 			)
 			(close presF)
-			(prompt "Preset deleted.")
+			(prompt "\nPreset deleted.")
 		)
 	)
 	(princ)
 )
 
-(defun c:delAPres()
+(defun c:delAPres( / presF)
 	(setq presF (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\LSP Files\\Preset.lsp" "w"))
 	(close presF)
-	(prompt "All presets deleted.")
+	(prompt "\nAll presets deleted.")
 	(princ)
 )
 
 (defun c:backupPoints()
-	(setq cMode (open "C:\\Users\\Ecoland\\Documents\\Helpful Code\\cModes.txt" "w"))
-	(write-line "4" cMode)
-	(close cMode)
+	(writeToCModes "4" nil nil)
 	(startapp "C:\\Users\\Ecoland\\Documents\\Helpful Code\\Coordinate Formatter.exe")
+)
+
+(defun c:delPt( / lNam sel q e1 e2 ss xdat1 xdat2)
+	(setq lNam (entsel "Select point or label to be deleted: "))
+	(setq e1 (entget (car lNam) '("Name")))
+	(setq xdat1 (cdr (car (cdr (car (cdr (assoc -3 e1)))))))
+	(if (= xdat1 nil) (prompt "\nInvalid selection.")
+		(progn
+			(setq sel (entnext))
+			(setq ss (ssadd (car lNam)))
+			(while (not (= sel nil))
+				(setq e2 (entget sel '("Name")))
+				(setq xdat2 (cdr (car (cdr (car (cdr (assoc -3 e2)))))))
+				(if (= xdat1 xdat2)
+					(setq ss (ssadd sel ss))
+				)
+				(setq sel (entnext sel))
+			)
+			(command "_erase" ss "")
+			(prompt "Label and Point deleted.\n")
+			(setq q (getYN "Undo that? [Y/N]: "))
+			(if (= q 1)
+				(command "_undo" 1)
+				(progn
+					(writeToCModes "5" xdat1 (getvar "dwgname"))
+					(startapp "C:\\Users\\Ecoland\\Documents\\Helpful Code\\Coordinate Formatter.exe")
+				)
+			)
+		)
+	)
+	(princ)
+)
+
+(defun c:movPt()
+	(setq lNam (entsel "Select point or label to be moved: "))
+	(setq e1 (entget (car lNam) '("Name")))
+	(setq xdat1 (cdr (car (cdr (car (cdr (assoc -3 e1)))))))
+	(if (= xdat1 nil) (prompt "\nInvalid selection.")
+		(progn
+			(setq sel (entnext))
+			(setq ss (ssadd (car lNam)))
+			(while (not (= sel nil))
+				(setq e2 (entget sel '("Name")))
+				(setq xdat2 (cdr (car (cdr (car (cdr (assoc -3 e2)))))))
+				(if (= xdat1 xdat2)
+					(setq ss (ssadd sel ss))
+				)
+				(setq sel (entnext sel))
+			)
+			(command "_erase" ss "")
+			(setq norm 0)
+			(writeToSaveFile xdat1 nil nil nil nil nil nil nil nil nil)
+			(PntNLbl PntOn LblOn BoxOn CoordOn CLbl)
+			(setq norm 1)
+			(writeToCModes "6" xdat1 (getvar "dwgname"))
+			(startapp "C:\\Users\\Ecoland\\Documents\\Helpful Code\\Coordinate Formatter.exe")
+		)
+	)
+	(princ)
+)
+
+(defun c:chngHt()
+	(setq ss (ssget "_A" '((-4 . "<AND") (0 . "LWPOLYLINE") (8 . "SUBDVN-Design-Construction") (-4 . "AND>"))))
+	(setq i 0)
+	(print (sslength ss))
+	(while (< i (sslength ss))
+		(entdel (ssname ss i))
+		(setq i (1+ i))
+	)
+	(setq i 0)
+	(setq ss1 (ssget "_A" '((-4 . "<AND") (0 . "TEXT") (8 . "SUBDVN-Design-Construction") (-4 . "AND>"))))
+	(while (< i (sslength ss1))
+		(if (not bns_tcircle) (load "acettxt.lsp"))
+		(setq eList (entget (ssname ss1 i)))
+		(setq eList (subst (cons 40 10.0) (assoc 40 eList) eList))
+		(entmod eList)
+		(bns_tcircle (ssadd (ssname ss1 i)) "Variable" "Rectangles" nil 0.5)
+		(print i)
+		(setq i (1+ i))
+	)
+	(princ)
+)
+
+(defun c:recordElevation()
+	(setq q (getYN "Record elevation? [Y/N]: "))
+	(if (= q 1)
+		(setq elOn 1)
+		(setq elOn 0)
+	)
+	(writeToSaveFile nil nil nil nil nil nil nil nil nil (itoa elOn))
 )
 
 (prompt "\nAdditional functions loaded.")
