@@ -293,13 +293,13 @@
 				)
 				(if (and (= lp 1) (= m2 1))
 					(progn
-						(setq dis (sqrt (+ (expt (* textH 0.5) 2) (expt (* textH 0.36) 2))))
+						(setq dis (sqrt (+ (expt (* textH 0.5) 2) (expt (* textH 0.7) 2))))
 						(setq rAng (* textA (/ PI 180)))
-						(setq tAng (+ rAng (atan (* textH 0.5) (* textH 0.36))))
+						(setq tAng (+ rAng (atan (* textH 0.5) (* textH 0.7))))
 						(if (= (substr numStr 1 1) "1")
 							(progn
-								(setq dis (sqrt (+ (expt (* textH 0.5) 2) (expt (* textH 0.215) 2))))
-								(setq tAng (+ rAng (atan (* textH 0.5) (* textH 0.215))))
+								(setq dis (sqrt (+ (expt (* textH 0.5) 2) (expt (* textH 0.5) 2))))
+								(setq tAng (+ rAng (atan (* textH 0.5) (* textH 0.5))))
 							)
 						)
 						(setq dis (/ dis (getvar "cannoscalevalue")))
@@ -317,12 +317,35 @@
 						(setq unN (+ unN 2))
 						(setq txtName (entlast))
 						(setq ss (ssget "_L"))
+						
+						(setq smP nil)
+						
 						(if (= m3 1)
 							(progn
 								(bns_tcircle ss "Variable" "Rectangles" nil 0.5)
 								(setq boxName (entlast))
 								(setq ss (ssadd (entlast) ss))
+								
+								(setq boxE (entget boxName))
+								(while (not (not boxE))
+									(setq tempI (car boxE))
+									(if (= (car tempI) 10)
+										(progn
+											(setq temp (cdr tempI))
+											(if (not smP)
+												(setq smP temp)
+												(progn
+													(if (< (distance temp pnt2) (distance smP pnt2))
+														(setq smP temp)
+													)
+												)
+											)
+										)
+									)
+									(setq boxE (cdr boxE))
+								)
 							) ; progn
+							(setq smP (cdr (assoc 10 (entget (txtName)))))
 						) ; if
 						(setq dis (sqrt (* (expt (* textH 0.1) 2) 2)))
 						(setq a (* dis (cos (+ rAng (/ PI 4)))))
@@ -339,7 +362,7 @@
 								)
 							)
 						)
-						(setq err (vl-catch-all-apply 'moveL (list ss pntb)))
+						(setq err (vl-catch-all-apply 'moveL (list ss smP)))
 						(repeat (setq cnt (sslength ss))
 							(setq e (ssname ss (setq cnt (1- cnt))))
 							(if (= (cdr (assoc 0 (entget e))) "TEXT")
@@ -979,7 +1002,6 @@
 			)
 		)
 	)
-	
 	(princ)
 )
 
