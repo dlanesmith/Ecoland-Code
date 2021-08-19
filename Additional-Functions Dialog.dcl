@@ -59,12 +59,23 @@ PLSet : dialog {
 	
 }
 
-AFMenu : dialog {
-	label = "Additional Functions Menu";
+PLFeat : dialog {
+	label = "Point and Label Features";
 	:boxed_row{
-		:button{
-			label = "Point";
-			key = "point";
+		:radio_column {
+			label = "Features";
+			:toggle {
+				key = "f1";
+				label = "Record Elevation";
+			}
+			: toggle {
+				key = "f2";
+				label = "Arrow";
+			}
+			:toggle {
+				key = "f3";
+				label = "Print Coordinate";
+			}
 		}
 	}
 	ok_cancel;

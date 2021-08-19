@@ -134,7 +134,7 @@
 ; Places point and records coordinate in file, labels the point and repeats with the label increasing by 1
 ; Different modes affect which capabilites are enabled
 
-(defun PntNLbl(m1 m2 m3 m4 m5 / lp2 xc yc pntm1 pntm2 cnt e outN outF saveF lin coordF ch lp em pnt1 pnt2 pntb pntf a b dis x y linN ss numStr wrt os num rAng fP fN i filP chk unN boxE temp tempI smP ptS)
+(defun PntNLbl(m1 m2 m3 m4 m5 / lp2 xc yc pntm1 pntm2 cnt e outN outF saveF lin coordF ch lp em pnt1 pnt2 pntb pntf a b dis x y linN ss numStr wrt os num rAng fP fN i filP chk unN boxE temp tempI smP ptS pntName boxName txtName arrName)
 	(setq lp 1)
 	(setq lp2 1)
 	(setq em 0)
@@ -326,7 +326,7 @@
 							(command "._text" pntf textH textA numStr)
 							(progn
 								(setq Spntf (strcat (rtos (car pntf) 2 3) "," (rtos (cadr pntf) 2 3) ",0"))
-								(command "._mtext" Spntf "r" textA "h" 1 "w" 20 (strcat "Name: " numStr "\nN: " (rtos (cadr pnt2) 2 3) "\nE: " (rtos (car pnt2) 2 3) "\nEl: " (rtos (caddr pnt2) 2 3)) "")
+								(command "._mtext" Spntf "r" textA "h" textH "w" 20 (strcat "Name: " numStr "\nN: " (rtos (cadr pnt2) 2 3) "\nE: " (rtos (car pnt2) 2 3) "\nEl: " (rtos (caddr pnt2) 2 3)) "")
 							)
 						)
 						(setq unN (+ unN 2))
@@ -458,9 +458,9 @@
 										)
 									)
 								) ; if
-								(setq arLW (/ textH 2))
+								(setq arLW (/ (/ textH 2) (getvar "cannoscalevalue")))
 								(setq arA (atan (- (cadr smP) (cadr pnt2)) (- (car smP) (car pnt2))))
-								(if (< (distance smP pnt2) textH)
+								(if (< (distance smP pnt2) (/ textH (getvar "cannoscalevalue")))
 									(setq arLW (/ (distance smP pnt2) 2))
 								)
 								(command "_pline" pnt2 "w" 0  arLW (setq p (polar pnt2 arA arLW)) "w" 0 0 (polar p arA (- (distance smP pnt2) arLW)) "")
@@ -937,6 +937,32 @@
 	(princ)
 )
 
+(defun c:PLFeat ( / tRC tA tPC)
+	(setq dcl_id (load_dialog "C:\\Users\\Ecoland\\Documents\\GitHub Files\\Ecoland-Code\\Additional-Functions Dialog.dcl"))
+	(new_dialog "PLFeat" dcl_id)
+	(setq
+		tRE 0
+		tA 0
+		tPC 0
+	)
+	(action_tile "f1" "(setq tRE 1)")
+	(action_tile "f2" "(setq tA 1)")
+	(action_tile "f3" "(setq tPC 1)")
+	(action_tile "cancel" "(done_dialog)")
+	(action_tile "accept"
+		(strcat
+		"(done_dialog)"
+		"(setq elOn tRE)"
+		"(setq arrow tA)"
+		"(setq prntCrd tPC)"
+		"(writeToSaveFile (binMode (list 10 11 12)) (list elOn arrow prntCrd))"
+		)
+	)
+	(start_dialog)
+	(unload_dialog dcl_id)
+	(princ)
+)
+
 (defun c:reload()
 	(load "C:\\Users\\Ecoland\\Documents\\GitHub Files\\Ecoland-Code\\Additional-Functions.lsp")
 	(princ)
@@ -1058,7 +1084,7 @@
 	(startapp "C:\\Users\\Ecoland\\Documents\\Helpful Code\\Coordinate Formatter.exe")
 )
 
-(defun c:delPt( / lNam sel q e1 e2 ss xdat1 xdat2)
+(defun c:dlPt( / lNam sel q e1 e2 ss xdat1 xdat2)
 	(setq lNam (entsel "Select point or label to be deleted: "))
 	(setq e1 (entget (car lNam) '("Name")))
 	(setq xdat1 (cdr (car (cdr (car (cdr (assoc -3 e1)))))))
@@ -1089,24 +1115,25 @@
 	(princ)
 )
 
-(defun c:movPt()
+(defun c:movPt( / lNam e1 xdat1 mPntOn mLblOn mBoxOn sel ss e2 xdat2 )
 	(setq lNam (entsel "Select point or label to be moved: "))
 	(setq e1 (entget (car lNam) '("Name")))
 	(setq xdat1 (cdr (car (cdr (car (cdr (assoc -3 e1)))))))
 	(if (= xdat1 nil) (prompt "\nInvalid selection.")
 		(progn
-			(setq mPntOn PntOn)
-			(setq mLblOn LblOn)
-			(setq mBoxOn BoxOn)
+			(setq mPntOn 0)
+			(setq mLblOn 0)
+			(setq mBoxOn 0)
+			(setq arrow 0)
 			(setq sel (entnext))
-			;(setq ss (ssadd (car lNam)))
+			(setq ss (ssadd (car lNam)))
 			(while (not (= sel nil))
 				(setq e2 (entget sel '("Name")))
 				(setq xdat2 (cdr (car (cdr (car (cdr (assoc -3 e2)))))))
 				(if (= xdat1 xdat2)
 					(progn
 						(setq ss (ssadd sel ss))
-						(if (= (cdr (assoc 0 e2)) "Point") (setq mPntOn 1))
+						(if (= (cdr (assoc 0 e2)) "POINT") (setq mPntOn 1))
 						(if (or (= (cdr (assoc 0 e2)) "TEXT") (= (cdr (assoc 0 e2)) "MTEXT")) (setq mLblOn 1))
 						(if (and (= (cdr (assoc 0 e2)) "LWPOLYLINE") (= (cdr (assoc 90 e2)) 4)) (setq mBoxOn 1))
 						(if (and (= (cdr (assoc 0 e2)) "LWPOLYLINE") (= (cdr (assoc 90 e2)) 3)) (setq arrow 1))
