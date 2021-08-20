@@ -394,7 +394,7 @@
 								(setq lp 0)
 							)
 						)
-						(if (and (= lp 1) (= arrow 1))
+						(if (and (= lp 1) (and (= arrow 1) (or (= m1 1) (= m4 1))))
 							(progn
 								(setq smP nil)
 								(if (= m3 1)
@@ -1154,7 +1154,7 @@
 	(princ)
 )
 
-(defun c:chngHt( / numStr)
+(defun c:chngHt( / numStr eList)
 	(regapp "Name")
 	(if (not bns_tcircle) (load "acettxt.lsp"))
 	(setq tss (entsel "Select one object from the layer you want to change the text height: "))
@@ -1211,7 +1211,7 @@
 	(princ)
 )
 
-(defun c:PtElev()
+(defun c:PtElev( / eList)
 	(setq C T)
 	(while C
 		(setq pt (entsel "Select point: "))
@@ -1286,6 +1286,45 @@
 		(setq prntCrd 0)
 	)
 	(writeToSaveFile (binMode (list 12)) (list (itoa prntCrd)))
+	(princ)
+)
+
+(defun c:linePL( / eList)
+	(setq c 2)
+	(setq linLst '("LINE") ; "LWPOLYLINE" "POLYLINE" "SPLINE" "ARC" "CIRCLE" "ELLIPSE"))
+	(setq spc (getreal "Input maximum differnece between points: "))
+	(prompt "\nSelect lines which you want points and labels on: \n")
+	(setq eList (list))
+	(while (= c 2)
+		(setq temp (vl-catch-all-apply 'entsel (list "\nChoose line or press \"esc\" when done: ")))
+		(if (vl-catch-all-error-p temp)
+			(progn
+				(if (= (vl-catch-all-error-message temp) "Function cancelled")
+					(progn
+						(prompt "\nLine selection finished.")
+						(setq c 1)
+					)
+					(progn
+						(prompt (strcat "\nError: " (vl-catch-all-error-message numStr) "."))
+						(setq c 0)
+					)
+				)
+			)
+			(progn
+				(setq temp (car temp))
+				(if (/= temp nil)
+					(if (/= (member (cdr (assoc 0 (entget temp))) linLst) nil)
+						(if (= (member temp eList) nil)
+							(setq eList (append eList (list temp)))
+							(prompt "\nLine already selected.")
+						)
+						(prompt "\nInvalid selection.")
+					)
+					(prompt "\nNo object selected.")
+				)
+			)
+		)
+	)
 	(princ)
 )
 
